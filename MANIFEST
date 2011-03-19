@@ -1,0 +1,7 @@
+Changes
+ignore.txt
+lib/Mojolicious/Plugin/Database.pm
+Makefile.PL
+MANIFEST
+README
+t/00-load.t
