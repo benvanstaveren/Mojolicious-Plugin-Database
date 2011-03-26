@@ -4,9 +4,7 @@ use Mojo::Base 'Mojolicious::Plugin';
 use version;
 use DBI;
 
-our $VERSION = qv(0.01);
-
-has 'dbh';
+our $VERSION = qv(0.02);
 
 sub register {
     my $self = shift;
@@ -14,14 +12,12 @@ sub register {
     my $conf = shift || {};
 
     die ref($self), ': missing dsn parameter', "\n" unless($conf->{dsn});
-
-    $self->dbh(DBI->connect($conf->{dsn}, $conf->{username}, $conf->{password}, $conf->{options}));
-
     die ref($self), ': failed to connect to database: ', $DBI::errstr, "\n" unless($self->dbh); 
 
-    my $helper_name = $conf->{helper} || 'db';
+    $app->attr('dbh' => sub { DBI->connect($conf->{dsn}, $conf->{username}, $conf->{password}, $conf->{options}) });
 
-    $app->helper($helper_name => sub { $self->dbh } );
+    my $helper_name = $conf->{helper} || 'db';
+    $app->helper($helper_name => sub { return shift->app->dbh });
 }
 
 1;
@@ -33,7 +29,7 @@ Mojolicious::Plugin::Database - "proper" handling of DBI based connections in Mo
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
 
 =head1 SYNOPSIS
 
