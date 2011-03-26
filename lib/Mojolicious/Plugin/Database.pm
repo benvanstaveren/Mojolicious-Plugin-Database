@@ -4,7 +4,7 @@ use Mojo::Base 'Mojolicious::Plugin';
 use version;
 use DBI;
 
-our $VERSION = qv(0.02);
+our $VERSION = qv(0.03);
 
 sub register {
     my $self = shift;

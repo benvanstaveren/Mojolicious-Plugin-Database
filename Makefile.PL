@@ -12,9 +12,10 @@ WriteMakefile(
       : ()),
     PL_FILES            => {},
     PREREQ_PM => {
+        'version'    => 0,
         'Test::More' => 0,
         'DBI'        => 0,
-        'version'    => 0,
+        'Mojolicious'=> 0,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'Mojolicious-Plugin-Database-*' },
