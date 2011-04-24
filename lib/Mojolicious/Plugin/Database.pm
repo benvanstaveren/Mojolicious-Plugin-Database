@@ -1,8 +1,8 @@
+use strict;
+use warnings;
 package Mojolicious::Plugin::Database;
 use Mojo::Base 'Mojolicious::Plugin';
 use DBI;
-
-our $VERSION = '1.03';
 
 sub register {
     my $self = shift;
@@ -10,7 +10,6 @@ sub register {
     my $conf = shift || {};
 
     die ref($self), ': missing dsn parameter', "\n" unless($conf->{dsn});
-    die ref($self), ': failed to connect to database: ', $DBI::errstr, "\n" unless($self->dbh); 
 
     $app->attr('dbh' => sub { DBI->connect($conf->{dsn}, $conf->{username}, $conf->{password}, $conf->{options}) });
 
@@ -24,10 +23,6 @@ __END__
 =head1 NAME
 
 Mojolicious::Plugin::Database - "proper" handling of DBI based connections in Mojolicious
-
-=head1 VERSION
-
-Version 1.03
 
 =head1 SYNOPSIS
 
@@ -49,19 +44,22 @@ Provides "sane" handling of DBI connections so problems with pre-forking (Hypnot
 
 =head1 CONFIGURATION
 
-The only required option is the 'dsn' one, which should contain a valid DBI dsn to connect to your database of choice. The actual connection is made when the plugin is registered. 
+The only required option is the 'dsn' one, which should contain a valid DBI dsn to connect to your database of choice.
 
 =head1 METHODS/HELPERS
 
 A helper is created with a name you specified (or 'db' by default) that can be used to get the active DBI connection. 
 
+
 =head1 AUTHOR
 
 Ben van Staveren, C<< <madcat at cpan.org> >>
 
-=head1 BUGS
+=head1 BUGS/CONTRIBUTING
 
-Please report any bugs or feature requests to through the web interface at L<http://bitbucket.org/xirinet/mojolicious-plugin-database/issues>.
+Please report any bugs or feature requests to through the web interface at L<https://github.com/benvanstaveren/mojolicious-plugin-database/issues>.
+If you want to contribute changes or otherwise involve yourself in development, feel free to fork the Git repository from L<https://github.com/benvanstaveren/mojolicious-plugin-database/>.
+
 
 =head1 SUPPORT
 
