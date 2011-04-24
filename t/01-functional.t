@@ -9,7 +9,7 @@ use Test::More;
 
 eval "use DBD::SQLite";
 plan skip_all => 'DBD::SQLite required for this test!' if $@;
-plan tests => 21;
+plan tests => 6;
 
 # testing code starts here
 use Mojolicious::Lite;
