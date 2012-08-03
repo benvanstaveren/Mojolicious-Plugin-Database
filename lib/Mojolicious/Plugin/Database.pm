@@ -11,7 +11,11 @@ sub register {
 
     die ref($self), ': missing dsn parameter', "\n" unless($conf->{dsn});
 
-    $app->attr('dbh' => sub { DBI->connect($conf->{dsn}, $conf->{username}, $conf->{password}, $conf->{options}) });
+    my $dbh_connect = sub { DBI->connect($conf->{dsn}, $conf->{username}, $conf->{password}, $conf->{options}) };
+
+    $app->attr('dbh' => sub { 
+        DBI->connect($conf->{dsn}, $conf->{username}, $conf->{password}, $conf->{options}) 
+    });
 
     my $helper_name = $conf->{helper} || 'db';
     $app->helper($helper_name => sub { return shift->app->dbh });
