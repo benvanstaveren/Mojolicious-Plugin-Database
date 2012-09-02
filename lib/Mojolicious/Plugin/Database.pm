@@ -92,9 +92,11 @@ L<http://search.cpan.org/dist/Mojolicious-Plugin-Database/>
 
 Based on a small example by sri and his request if someone could please write a plugin for this stuff.
 
+alabamapaul (github) for fixing the tests to work on Windows
+
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2011 Ben van Staveren.
+Copyright 2011, 2012 Ben van Staveren.
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of either: the GNU General Public License as published
