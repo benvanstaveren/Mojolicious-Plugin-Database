@@ -17,8 +17,9 @@ use Test::Mojo;
 use DBD::SQLite;
 use DBI;
 use Try::Tiny;
+use File::Temp qw(tmpnam);
 
-my $dbname = "/tmp/mojolicious-plugin-database-test.$$.db";
+my $dbname = tmpnam();
 
 plugin 'database', { 
     'dsn'       => 'dbi:SQLite:dbname=' . $dbname,
