@@ -4,10 +4,10 @@ package Mojolicious::Plugin::Database;
 use Mojo::Base 'Mojolicious::Plugin';
 use DBI;
 
-sub register {
+sub single {
     my $self = shift;
     my $app  = shift;
-    my $conf = shift || {};
+    my $conf = shift;
 
     die ref($self), ': missing dsn parameter', "\n" unless($conf->{dsn});
 
@@ -17,6 +17,38 @@ sub register {
 
     my $helper_name = $conf->{helper} || 'db';
     $app->helper($helper_name => sub { return shift->app->dbh });
+}
+
+sub multi {
+    my $self = shift;
+    my $app  = shift;
+    my $conf = shift;
+
+    # databases should be a hashref
+    die ref($self), ': databases is not a hash reference', "\n" unless(ref($conf->{databases}) eq 'HASH');
+
+    foreach my $helper (keys(%{$conf->{databases}})) {
+        my $dbconf = $conf->{databases}->{$helper};
+        die ref($self), ': missing dsn parameter for ' . $helper, "\n" unless(defined($dbconf->{dsn}));
+        my $attr_name = '_dbh_' . $helper;
+        $app->attr($attr_name => sub {
+            DBI->connect($dbconf->{dsn}, $dbconf->{username}, $dbconf->{password}, $dbconf->{options});
+        });
+        $app->helper($helper => sub { return shift->app->$attr_name() });
+    }
+}
+
+sub register {
+    my $self = shift;
+    my $app  = shift;
+    my $conf = shift || {};
+
+    if(defined($conf->{databases})) {
+        $self->multi($app, $conf);
+    } else {
+        # old-style connect
+        $self->single($app, $conf);
+    }
 }
 
 1;
@@ -42,16 +74,59 @@ Provides "sane" handling of DBI connections so problems with pre-forking (Hypnot
             options  => { 'pg_enable_utf8' => 1, AutoCommit => 0 },
             helper   => 'db',
             });
+
+        # or if you require multiple databases at the same time
+        $self->plugin('database', { 
+            databases => {
+                'db1' => { 
+                    dsn      => 'dbi:Pg:dbname=foo',
+                    username => 'myusername',
+                    password => 'mypassword',
+                },
+                'db2' => {
+                    dsn      => 'dbi:MySQL:dbname=bar',
+                    username => 'othername',
+                    password => 'otherpassword',
+                },
+            },
+        });
     }
 
 =head1 CONFIGURATION
 
-The only required option is the 'dsn' one, which should contain a valid DBI dsn to connect to your database of choice.
+=head2 CONNECTING TO A SINGLE DATABASE
+
+When connecting to a single database, the following configuration options are recognised:
+
+=over 4
+
+=item 'dsn'         should contain the DSN string required by DBI 
+
+=item 'username'    the username that should be used to authenticate 
+
+=item 'password'    the password that should be used to authenticate
+
+=item 'options'     options to pass to the DBD driver 
+
+=item 'helper'      the name of the helper to associate with this database (default: db)
+
+=back
+
+The only required option is 'dsn', every other option is optional.
+
+=head2 CONNECTING TO MULTIPLE DATABASES
+
+When you have the need to connect to multiple databases (or different RDBMS types), the following options are recognised:
+
+=over 4
+
+=item 'databases'   A hash reference whose key is the helper name, and the value is another hash reference containing connection options.
+
+=back
 
 =head1 METHODS/HELPERS
 
-A helper is created with a name you specified (or 'db' by default) that can be used to get the active DBI connection. 
-
+A helper is created with a name you specified (or 'db' by default) that can be used to get the active DBI connection. When using multiple databases, you also get multiple helpers.
 
 =head1 AUTHOR
 
@@ -92,7 +167,9 @@ L<http://search.cpan.org/dist/Mojolicious-Plugin-Database/>
 
 Based on a small example by sri and his request if someone could please write a plugin for this stuff.
 
-alabamapaul (github) for fixing the tests to work on Windows
+alabamapaul (github) for fixing the tests to work on Windows.
+
+Babatope Aloba for pointing out it'd be really useful to be able to connect to multiple databases at once.
 
 =head1 LICENSE AND COPYRIGHT
 
