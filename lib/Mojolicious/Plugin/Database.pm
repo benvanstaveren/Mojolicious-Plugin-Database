@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 package Mojolicious::Plugin::Database;
+
 use Mojo::Base 'Mojolicious::Plugin';
 use DBI;
 
