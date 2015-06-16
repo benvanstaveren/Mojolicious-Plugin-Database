@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 package Mojolicious::Plugin::Database;
+
 use Mojo::Base 'Mojolicious::Plugin';
 use DBI;
 
@@ -13,9 +14,10 @@ sub single {
 
     my $dbh_connect = sub { DBI->connect($conf->{dsn}, $conf->{username}, $conf->{password}, $conf->{options}) };
 
-    $app->attr('dbh' => $dbh_connect);
-
     my $helper_name = $conf->{helper} || 'db';
+
+    $app->attr("_dbh_$helper_name" => $dbh_connect);
+
     $app->helper($helper_name => sub { return shift->app->dbh });
 }
 
