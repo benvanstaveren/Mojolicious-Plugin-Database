@@ -18,7 +18,11 @@ sub single {
 
     $app->attr("_dbh_$helper_name" => $dbh_connect);
 
-    $app->helper($helper_name => sub { return shift->app->dbh });
+    $app->helper($helper_name => sub { 
+        my $self = shift;
+        my $attr = "_dbh_$helper_name";
+        return $self->app->$attr();
+    });
 }
 
 sub multi {
