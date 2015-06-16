@@ -173,7 +173,7 @@ Babatope Aloba for pointing out it'd be really useful to be able to connect to m
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2011, 2012 Ben van Staveren.
+Copyright 2011-2015 Ben van Staveren.
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of either: the GNU General Public License as published
