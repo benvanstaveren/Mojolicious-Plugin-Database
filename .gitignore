@@ -16,3 +16,5 @@ Mojolicious-Plugin-Database*
 META.json
 META.yml
 MYMETA.*
+*.swp
+*.sw?
