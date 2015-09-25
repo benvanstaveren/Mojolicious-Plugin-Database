@@ -44,7 +44,9 @@ sub multi {
         die ref($self), ': missing dsn parameter for ' . $helper, "\n" unless(defined($dbconf->{dsn}));
         my $attr_name = '_dbh_' . $helper;
         $app->attr($attr_name => sub {
-            DBI->connect($dbconf->{dsn}, $dbconf->{username}, $dbconf->{password}, $dbconf->{options});
+            my $dbh = DBI->connect($dbconf->{dsn}, $dbconf->{username}, $dbconf->{password}, $dbconf->{options});
+            $dbconf->{on_connect}($dbh) if $dbconf->{on_connect};
+            return $dbh;
         });
         $app->helper($helper => sub { return shift->app->$attr_name() });
     }
