@@ -12,19 +12,13 @@ sub single {
 
     die ref($self), ': missing dsn parameter', "\n" unless($conf->{dsn});
 
-
-
-    my $dbh_connect = sub {
-      my $dbh = DBI->connect($conf->{dsn}, $conf->{username}, $conf->{password}, $conf->{options});
-      $conf->{on_connect}($dbh) if $conf->{on_connect};
-      return $dbh;
-    };
+    my $dbh_connect = sub { DBI->connect($conf->{dsn}, $conf->{username}, $conf->{password}, $conf->{options}) };
 
     my $helper_name = $conf->{helper} || 'db';
 
     $app->attr("_dbh_$helper_name" => $dbh_connect);
 
-    $app->helper($helper_name => sub {
+    $app->helper($helper_name => sub { 
         my $self = shift;
         my $attr = "_dbh_$helper_name";
         return $self->app->$attr();
@@ -44,9 +38,7 @@ sub multi {
         die ref($self), ': missing dsn parameter for ' . $helper, "\n" unless(defined($dbconf->{dsn}));
         my $attr_name = '_dbh_' . $helper;
         $app->attr($attr_name => sub {
-            my $dbh = DBI->connect($dbconf->{dsn}, $dbconf->{username}, $dbconf->{password}, $dbconf->{options});
-            $dbconf->{on_connect}($dbh) if $dbconf->{on_connect};
-            return $dbh;
+            DBI->connect($dbconf->{dsn}, $dbconf->{username}, $dbconf->{password}, $dbconf->{options});
         });
         $app->helper($helper => sub { return shift->app->$attr_name() });
     }
@@ -74,14 +66,14 @@ Mojolicious::Plugin::Database - "proper" handling of DBI based connections in Mo
 
 =head1 SYNOPSIS
 
-Provides "sane" handling of DBI connections so problems with pre-forking (Hypnotoad, etc.) will not occur.
+Provides "sane" handling of DBI connections so problems with pre-forking (Hypnotoad, etc.) will not occur. 
 
     use Mojolicious::Plugin::Database;
 
     sub startup {
         my $self = shift;
 
-        $self->plugin('database', {
+        $self->plugin('database', { 
             dsn      => 'dbi:Pg:dbname=foo',
             username => 'myusername',
             password => 'mypassword',
@@ -90,9 +82,9 @@ Provides "sane" handling of DBI connections so problems with pre-forking (Hypnot
             });
 
         # or if you require multiple databases at the same time
-        $self->plugin('database', {
+        $self->plugin('database', { 
             databases => {
-                'db1' => {
+                'db1' => { 
                     dsn      => 'dbi:Pg:dbname=foo',
                     username => 'myusername',
                     password => 'mypassword',
@@ -114,13 +106,13 @@ When connecting to a single database, the following configuration options are re
 
 =over 4
 
-=item 'dsn'         should contain the DSN string required by DBI
+=item 'dsn'         should contain the DSN string required by DBI 
 
-=item 'username'    the username that should be used to authenticate
+=item 'username'    the username that should be used to authenticate 
 
 =item 'password'    the password that should be used to authenticate
 
-=item 'options'     options to pass to the DBD driver
+=item 'options'     options to pass to the DBD driver 
 
 =item 'helper'      the name of the helper to associate with this database (default: db)
 
