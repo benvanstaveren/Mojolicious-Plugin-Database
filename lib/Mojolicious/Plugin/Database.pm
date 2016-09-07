@@ -1,68 +1,41 @@
-use strict;
-use warnings;
 package Mojolicious::Plugin::Database;
-
 use Mojo::Base 'Mojolicious::Plugin';
+
+our $VERSION = '1.11';
+
 use DBI;
 
 sub single {
-    my $self = shift;
-    my $app  = shift;
-    my $conf = shift;
+  my ($self, $app, $conf) = @_;
 
-    die ref($self), ': missing dsn parameter', "\n" unless($conf->{dsn});
+  die ref($self) . ": missing dsn parameter\n" unless $conf->{dsn};
 
+  my $helper = $conf->{helper} || 'db';
+  my $attr_name = '_dbh_' . $helper;
+  $attr_name =~ s/\./_/g;
 
+  $app->attr($attr_name => sub {
+    my $dbh = DBI->connect($conf->{dsn}, $conf->{username}, $conf->{password}, $conf->{options});
+    $conf->{on_connect}($dbh) if $conf->{on_connect};
+    return $dbh;
+  });
 
-    my $dbh_connect = sub {
-      my $dbh = DBI->connect($conf->{dsn}, $conf->{username}, $conf->{password}, $conf->{options});
-      $conf->{on_connect}($dbh) if $conf->{on_connect};
-      return $dbh;
-    };
-
-    my $helper_name = $conf->{helper} || 'db';
-
-    $app->attr("_dbh_$helper_name" => $dbh_connect);
-
-    $app->helper($helper_name => sub {
-        my $self = shift;
-        my $attr = "_dbh_$helper_name";
-        return $self->app->$attr();
-    });
-}
-
-sub multi {
-    my $self = shift;
-    my $app  = shift;
-    my $conf = shift;
-
-    # databases should be a hashref
-    die ref($self), ': databases is not a hash reference', "\n" unless(ref($conf->{databases}) eq 'HASH');
-
-    foreach my $helper (keys(%{$conf->{databases}})) {
-        my $dbconf = $conf->{databases}->{$helper};
-        die ref($self), ': missing dsn parameter for ' . $helper, "\n" unless(defined($dbconf->{dsn}));
-        my $attr_name = '_dbh_' . $helper;
-        $app->attr($attr_name => sub {
-            my $dbh = DBI->connect($dbconf->{dsn}, $dbconf->{username}, $dbconf->{password}, $dbconf->{options});
-            $dbconf->{on_connect}($dbh) if $dbconf->{on_connect};
-            return $dbh;
-        });
-        $app->helper($helper => sub { return shift->app->$attr_name() });
-    }
+  $app->helper($helper => sub { shift->app->$attr_name });
 }
 
 sub register {
-    my $self = shift;
-    my $app  = shift;
-    my $conf = shift || {};
+  my ($self, $app, $conf) = @_;
 
-    if(defined($conf->{databases})) {
-        $self->multi($app, $conf);
-    } else {
-        # old-style connect
-        $self->single($app, $conf);
+  if (defined($conf->{databases})) {
+    die ref($self) . ": databases is not a hash reference\n" unless ref $conf->{databases} eq 'HASH';
+    for (keys %{$conf->{databases}}) {
+      $conf->{databases}->{$_}->{helper} = $_;
+      $self->single($app, $conf->{databases}->{$_});
     }
+  }
+  else {
+    $self->single($app, $conf);
+  }
 }
 
 1;
