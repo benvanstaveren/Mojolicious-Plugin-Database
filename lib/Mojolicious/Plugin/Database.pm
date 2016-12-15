@@ -27,7 +27,14 @@ sub single {
     $app->helper($helper_name => sub {
         my $self = shift;
         my $attr = "_dbh_$helper_name";
-        return $self->app->$attr();
+
+        my $dbh = $self->app->$attr();
+
+        unless( $dbh->ping ) {
+            $dbh = $dbh_connect->();
+            $self->app->$attr($dbh);
+        }
+        return $dbh;
     });
 }
 
@@ -43,12 +50,24 @@ sub multi {
         my $dbconf = $conf->{databases}->{$helper};
         die ref($self), ': missing dsn parameter for ' . $helper, "\n" unless(defined($dbconf->{dsn}));
         my $attr_name = '_dbh_' . $helper;
-        $app->attr($attr_name => sub {
+        my $default = sub {
             my $dbh = DBI->connect($dbconf->{dsn}, $dbconf->{username}, $dbconf->{password}, $dbconf->{options});
             $dbconf->{on_connect}($dbh) if $dbconf->{on_connect};
             return $dbh;
-        });
-        $app->helper($helper => sub { return shift->app->$attr_name() });
+        };
+        $app->attr($attr_name => $default );
+        $app->helper(
+            $helper => sub {
+                my $self = shift;
+                my $dbh = $self->app->$attr_name();
+
+                unless( $dbh->ping ) {
+                    $dbh = $default->();
+                    $self->app->$attr_name( $dbh );
+                }
+                return $dbh;
+            }
+        );
     }
 }
 
