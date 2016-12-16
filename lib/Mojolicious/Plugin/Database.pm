@@ -23,11 +23,24 @@ sub single {
     my $helper_name = $conf->{helper} || 'db';
 
     $app->attr("_dbh_$helper_name" => $dbh_connect);
+    $app->attr("_dbh_check_connection_threshold_$helper_name" => $conf->{connection_check_threshold} || 30 );
+    $app->attr("_dbh_connection_last_check_$helper_name" => time );
 
     $app->helper($helper_name => sub {
         my $self = shift;
         my $attr = "_dbh_$helper_name";
-        return $self->app->$attr();
+        my $last_check_attr = "_dbh_connection_last_check_$helper_name";
+        my $threshold_check_attr = "_dbh_check_connection_threshold_$helper_name";
+        my $dbh = $self->app->$attr();
+
+        if( time - $self->app->$last_check_attr() > $self->app->$threshold_check_attr() ) {
+            $self->app->$last_check_attr( time );
+            unless( $dbh->ping ) {
+                $dbh = $dbh_connect->();
+                $self->app->$attr($dbh);
+            }
+        }
+        return $dbh;
     });
 }
 
@@ -43,12 +56,31 @@ sub multi {
         my $dbconf = $conf->{databases}->{$helper};
         die ref($self), ': missing dsn parameter for ' . $helper, "\n" unless(defined($dbconf->{dsn}));
         my $attr_name = '_dbh_' . $helper;
-        $app->attr($attr_name => sub {
+        my $last_check_attr_name = "_dbh_connection_last_check_$helper";
+        my $threshold_check_attr_name = "_dbh_check_connection_threshold_$helper";
+        my $default = sub {
             my $dbh = DBI->connect($dbconf->{dsn}, $dbconf->{username}, $dbconf->{password}, $dbconf->{options});
             $dbconf->{on_connect}($dbh) if $dbconf->{on_connect};
             return $dbh;
-        });
-        $app->helper($helper => sub { return shift->app->$attr_name() });
+        };
+        $app->attr($attr_name => $default );
+        $app->attr( $threshold_check_attr_name => $dbconf->{connection_check_threshold} || 30 );
+        $app->attr( $last_check_attr_name => time );
+        $app->helper(
+            $helper => sub {
+                my $self = shift;
+                my $dbh = $self->app->$attr_name();
+
+                if( time - $self->app->$last_check_attr_name() > $self->app->$threshold_check_attr_name() ) {
+                    $self->app->$last_check_attr_name( time );
+                    unless( $dbh->ping ) {
+                        $dbh = $default->();
+                        $self->app->$attr_name( $dbh );
+                    }
+                }
+                return $dbh;
+            }
+        );
     }
 }
 
@@ -82,25 +114,28 @@ Provides "sane" handling of DBI connections so problems with pre-forking (Hypnot
         my $self = shift;
 
         $self->plugin('database', {
-            dsn      => 'dbi:Pg:dbname=foo',
-            username => 'myusername',
-            password => 'mypassword',
-            options  => { 'pg_enable_utf8' => 1, AutoCommit => 0 },
-            helper   => 'db',
+            dsn                        => 'dbi:Pg:dbname=foo',
+            username                   => 'myusername',
+            password                   => 'mypassword',
+            options                    => { 'pg_enable_utf8'   => 1, AutoCommit => 0 },
+            helper                     => 'db',
+            connection_check_threshold => 10,
             });
 
         # or if you require multiple databases at the same time
         $self->plugin('database', {
             databases => {
                 'db1' => {
-                    dsn      => 'dbi:Pg:dbname=foo',
-                    username => 'myusername',
-                    password => 'mypassword',
+                    dsn                        => 'dbi:Pg:dbname=foo',
+                    username                   => 'myusername',
+                    password                   => 'mypassword',
+                    connection_check_threshold => 10,
                 },
                 'db2' => {
-                    dsn      => 'dbi:MySQL:dbname=bar',
-                    username => 'othername',
-                    password => 'otherpassword',
+                    dsn                        => 'dbi:MySQL:dbname=bar',
+                    username                   => 'othername',
+                    password                   => 'otherpassword',
+                    connection_check_threshold => 10,
                 },
             },
         });
@@ -114,15 +149,17 @@ When connecting to a single database, the following configuration options are re
 
 =over 4
 
-=item 'dsn'         should contain the DSN string required by DBI
+=item 'dsn'                         should contain the DSN string required by DBI
 
-=item 'username'    the username that should be used to authenticate
+=item 'username'                    the username that should be used to authenticate
 
-=item 'password'    the password that should be used to authenticate
+=item 'password'                    the password that should be used to authenticate
 
-=item 'options'     options to pass to the DBD driver
+=item 'options'                     options to pass to the DBD driver
 
-=item 'helper'      the name of the helper to associate with this database (default: db)
+=item 'helper'                      the name of the helper to associate with this database (default: db)
+
+=item 'connection_check_threshold'  interval in seconds at which state of the connection will be checked, to reconnect if needed ( default: 30 seconds )
 
 =back
 

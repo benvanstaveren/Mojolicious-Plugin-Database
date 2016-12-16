@@ -12,25 +12,28 @@ Provides "sane" handling of DBI connections so problems with pre-forking (Hypnot
         my $self = shift;
 
         $self->plugin('database', {
-            dsn      => 'dbi:Pg:dbname=foo',
-            username => 'myusername',
-            password => 'mypassword',
-            options  => { 'pg_enable_utf8' => 1, AutoCommit => 0 },
-            helper   => 'db',
+            dsn                        => 'dbi:Pg:dbname=foo',
+            username                   => 'myusername',
+            password                   => 'mypassword',
+            options                    => { 'pg_enable_utf8'   => 1, AutoCommit => 0 },
+            helper                     => 'db',
+            connection_check_threshold => 10,
             });
 
         # or if you require multiple databases at the same time
         $self->plugin('database', {
             databases => {
                 'db1' => {
-                    dsn      => 'dbi:Pg:dbname=foo',
-                    username => 'myusername',
-                    password => 'mypassword',
+                    dsn                        => 'dbi:Pg:dbname=foo',
+                    username                   => 'myusername',
+                    password                   => 'mypassword',
+                    connection_check_threshold => 10,
                 },
                 'db2' => {
-                    dsn      => 'dbi:MySQL:dbname=bar',
-                    username => 'othername',
-                    password => 'otherpassword',
+                    dsn                        => 'dbi:MySQL:dbname=bar',
+                    username                   => 'othername',
+                    password                   => 'otherpassword',
+                    connection_check_threshold => 10,
                 },
             },
         });
@@ -44,15 +47,17 @@ When connecting to a single database, the following configuration options are re
 
 =over 4
 
-=item 'dsn'         should contain the DSN string required by DBI
+=item 'dsn'                         should contain the DSN string required by DBI
 
-=item 'username'    the username that should be used to authenticate
+=item 'username'                    the username that should be used to authenticate
 
-=item 'password'    the password that should be used to authenticate
+=item 'password'                    the password that should be used to authenticate
 
-=item 'options'     options to pass to the DBD driver
+=item 'options'                     options to pass to the DBD driver
 
-=item 'helper'      the name of the helper to associate with this database (default: db)
+=item 'helper'                      the name of the helper to associate with this database (default: db)
+
+=item 'connection_check_threshold'  interval in seconds at which state of the connection will be checked, to reconnect if needed ( default: 30 seconds )
 
 =back
 
